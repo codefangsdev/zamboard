@@ -23,6 +23,8 @@ export const KNOWN_KINDS = [
   // Phase 6 (docs/API-orchestration.md §1): understood by the hub
   'group',
   'orchestrator',
+  'planboard',
+  'browsertest',
   'memory',
   // Phase 7 (docs/API-studio.md §4.7)
   'web',
@@ -434,6 +436,8 @@ export const DEFAULT_SIZE: Record<string, { w: number; h: number }> = {
   file: { w: 320, h: 132 },
   folder: { w: 320, h: 420 },
   orchestrator: { w: 380, h: 460 },
+  planboard: { w: 480, h: 560 },
+  browsertest: { w: 960, h: 640 },
   memory: { w: 320, h: 300 },
   web: { w: 960, h: 640 },
   weblog: { w: 460, h: 380 },
@@ -521,6 +525,10 @@ export function nodeLabel(n: BoardNode, project?: Project): string {
       return str(n.data.name, 'Group');
     case 'orchestrator':
       return str(n.data.title, 'Orchestrator');
+    case 'planboard':
+      return str(n.data.title, 'Plan Board');
+    case 'browsertest':
+      return 'Browser testing';
     case 'memory':
       return 'Memory';
     case 'web':

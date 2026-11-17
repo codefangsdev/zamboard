@@ -20,6 +20,8 @@ const HEADER_DRAG: Record<string, string> = {
   file: '.tile-head',
   group: '.group-head',
   orchestrator: '.tile-head',
+  planboard: '.tile-head',
+  browsertest: '.tile-head',
   memory: '.tile-head',
   web: '.tile-head',
   weblog: '.tile-head',

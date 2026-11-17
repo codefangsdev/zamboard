@@ -659,7 +659,7 @@ func TestProjectMemoryAcrossCLIs(t *testing.T) {
 		return resp.StatusCode, out
 	}
 	st, out := rpc(cid, envOf(env, "NB_TOKEN"), "tools/list", nil)
-	if n := len(out["result"].(map[string]any)["tools"].([]any)); st != 200 || n != 4 { // memory_search, memory_read, memory_save, memory_move
+	if n := len(out["result"].(map[string]any)["tools"].([]any)); st != 200 || n != 5 { // four memory tools plus browser_test
 		t.Fatalf("claude endpoint %d: %v", st, out)
 	}
 	_, out = rpc(cid, envOf(env, "NB_TOKEN"), "tools/call", map[string]any{"name": "memory_search", "arguments": map[string]any{"query": "database"}})
@@ -690,8 +690,8 @@ func TestProjectMemoryAcrossCLIs(t *testing.T) {
 	}
 	tok := envOf(env, "NB_TOKEN")
 	_, out = rpc(xid, tok, "tools/list", nil)
-	if n := len(out["result"].(map[string]any)["tools"].([]any)); n != 4 {
-		t.Fatalf("memory tools only: %v", out)
+	if n := len(out["result"].(map[string]any)["tools"].([]any)); n != 5 {
+		t.Fatalf("memory and browser tools: %v", out)
 	}
 	_, out = rpc(xid, tok, "tools/call", map[string]any{"name": "bash", "arguments": map[string]any{"command": "true"}})
 	if !strings.Contains(fmt.Sprint(out), "This PC") {

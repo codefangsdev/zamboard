@@ -18,6 +18,7 @@ import { useMarkdown } from '../board/lazy';
 import { MarkdownView } from '../studio/MarkdownView';
 import { messageAuthor, messageText, useLeadName } from './lead';
 import { CopyButton, LeadAvatar } from './OrderBits';
+import { PlanTimeline } from './PlanTimeline';
 import { ORDER_DONE, type Confirmation, type Order, type OrderTarget, type ThreadMessage } from './types';
 
 const TARGET_LABEL: Record<string, string> = {
@@ -313,7 +314,7 @@ function MessageViewImpl({ m, onOutput, compact, lead, actions, onGoTo }: { m: T
       </li>
     );
   }
-  if (m.kind === 'plan') {
+  if (m.kind === 'plan' || m.executionPlan) {
     return (
       <li className="msg msg-plan" data-msg={m.id}>
         <div className="msg-head">
@@ -324,11 +325,12 @@ function MessageViewImpl({ m, onOutput, compact, lead, actions, onGoTo }: { m: T
             {time}
           </span>
         </div>
+        {m.executionPlan && <PlanTimeline plan={m.executionPlan} />}
         {m.plan && m.plan.length > 0 && (
           <ol className="plan-list">
             {m.plan.map((p, i) => (
               <li key={i}>
-                <span className="plan-handle">@{p.handle}</span>
+                {p.handle && <span className="plan-handle">@{p.handle}</span>}
                 <FoldText className="plan-text" text={p.text} fold={compact} />
               </li>
             ))}
@@ -446,7 +448,7 @@ export function ThreadList({ threadId, compact, empty, lead, actions }: { thread
   useLayoutEffect(() => {
     const el = ref.current;
     if (el && stick.current) el.scrollTop = el.scrollHeight;
-  }, [thread.messages.length, pending]);
+  }, [thread.messages, pending]);
 
   return (
     <div

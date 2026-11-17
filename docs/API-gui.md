@@ -320,3 +320,40 @@ On limited links, the Wayland display stays far above RFB alone:
 - **RFB:** the viewer prefers ZRLE, because `wayvnc` has no lossless refresh like Xtigervnc. Text while still stays exact. Keys are sent as keysyms (without `QEMUExtendedKeyEvent`) so keyboard layouts other than US come out right. Pasted text is sent as `Provide` without `Notify`, because the `Notify` flow takes one RTT and the Ctrl+V key would arrive first.
 - **`wayvnc` crashes:** `wayvnc` 0.9.1 segfaults now and then. The hub restarts it within ~2 seconds, the viewer reconnects by itself, and the app is not disturbed.
 - **`XDG_RUNTIME_DIR`:** the compositor uses a private folder `$XDG_RUNTIME_DIR/nb-<id>`. Apps keep using their original folder because they need PipeWire, with `WAYLAND_DISPLAY` holding an absolute path.
+
+## Browser testing live (macOS and Linux)
+
+Webpage tests can use a separate Playwright Chromium browser without the Linux desktop-app display stack. The `browser_test` MCP tool is available to writable board consoles; hidden runners and read-only tools do not receive it. Offline-sandbox projects cannot use it. The browser runs on the hub: `localhost` means the hub, and an SSH-hosted web app needs a URL the hub can reach.
+
+Runtime needs Node.js and the existing Playwright package (`cd web && npm ci && npx playwright install chromium`). The hub finds `web/node_modules/playwright` from the source checkout or next to `bin/`; other installations can set `NEXTBOARD_PLAYWRIGHT_PATH` to the installed `playwright` package directory. Restart an existing agent console to refresh its MCP tools and launch instructions.
+
+Tool arguments:
+
+```jsonc
+{"action":"open","url":"http://localhost:3000"}
+{"action":"snapshot"}
+{"action":"hover","selector":"#submit"}
+{"action":"click","selector":"#submit"}
+{"action":"fill","selector":"input[name=email]","text":"test@example.test"}
+{"action":"press","key":"Enter"}
+{"action":"scroll","y":500}
+{"action":"close"}
+```
+
+Each answer includes the current URL, title, page text, and selectors for up to 150 interactive elements. Snapshot selectors (`data-zamboard-id`) describe the current DOM; refresh the snapshot after navigation or dynamic changes. Only HTTP(S) URLs without embedded credentials can be opened. No arbitrary JavaScript execution tool is exposed.
+
+The first open creates a persisted `browsertest` canvas card beside the agent console; subsequent calls reuse it. Each console has a separate temporary browser context and a fixed 1280×800 viewport. Frames include the simulated yellow cursor and click ring. Movement is deliberately paced so it remains visible. The viewer polls JPEG frames at up to 5 fps; it is a monitoring view, without manual mouse or keyboard forwarding, audio, saved login profiles, or test-report generation. Agents report test results through their normal orchestrator thread. Browser instances are limited to 8 and close on explicit Stop/close or graceful hub shutdown; a hub restart leaves the card present but requires opening the browser again.
+
+Manual opening: select **Browser testing** in the board's card list or right-click → **More** → **Browser testing**. Pick a running agent console on the board and enter an HTTP(S) URL. **Open browser** opens the same live session the selected agent controls through `browser_test`; the card appears beside that console. No agent command is needed to open it.
+
+Authenticated owner APIs:
+
+- `GET /api/browser-test/{sid}/frame`: latest JPEG, `Cache-Control: no-store`; 503 before the first frame, 404 when the console/browser is absent.
+- `DELETE /api/browser-test/{sid}`: stops that console's browser, retains the canvas card.
+- `POST /api/browser-test/{sid}/open` with `{"url":"http://localhost:3000"}`: opens the selected console's live browser and creates/reuses its card; 404 for an absent console, 400 for a rejected URL or unavailable browser.
+
+Integration check (isolated temporary local webpages, no real agent/account):
+
+```sh
+NEXTBOARD_BROWSER_TEST=1 go test ./internal/server -run 'TestLiveBrowser|TestBrowserToolScope'
+```

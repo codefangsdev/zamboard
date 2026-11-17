@@ -210,7 +210,30 @@ export interface PlannerStatus {
 
 // ---- §4 threads & orders ----------------------------------------------------------
 
-export type MessageKind = 'order' | 'plan' | 'report' | 'reply' | 'note' | 'confirm' | 'error';
+export type MessageKind = 'order' | 'plan' | 'executionPlan' | 'report' | 'reply' | 'note' | 'confirm' | 'error';
+/** Execution snapshots arrive as updates to the same persisted thread message. */
+export interface ExecutionPlanStep {
+  id: string;
+  order: number;
+  op: string;
+  title: string;
+  assignees?: { sessionId?: string; handle?: string; agent?: string }[] | null;
+  dependsOn?: string[] | null;
+  state: string;
+  orderIds?: string[] | null;
+  result?: string;
+  error?: string;
+}
+export interface ExecutionPlan {
+  id: string;
+  commandId: string;
+  workspaceId?: string;
+  cardId?: string;
+  state: string;
+  confirmationId?: string;
+  updatedAt?: string;
+  steps: ExecutionPlanStep[] | null;
+}
 export interface ThreadMessage {
   id: string;
   threadId: string;
@@ -223,6 +246,7 @@ export interface ThreadMessage {
   sessionId?: string;
   handle?: string;
   plan?: { handle: string; text: string }[] | null;
+  executionPlan?: ExecutionPlan | null;
   report?: { state: 'finished' | 'failed' | 'timeout' | 'skipped' | string; durationMs?: number; excerpt?: string; chars?: number } | null;
   confirmationId?: string;
   /** The earlier message this answers. */

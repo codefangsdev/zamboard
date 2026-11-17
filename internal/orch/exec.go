@@ -22,15 +22,26 @@ import (
 // execute runs steps in order; a failing step is recorded and later
 // independent steps still run (§3.8).
 func (s *Service) execute(c *execCtx, steps []Step) {
-	for _, st := range steps {
-		if err := st.Validate(); err != nil {
+	s.ensureExecutionPlan(c, steps)
+	for i, st := range steps {
+		c.planStepID = fmt.Sprintf("%s:%d", c.commandID, i+1)
+		s.updatePlanStep(c, "running", "")
+		err := st.Validate()
+		if err == nil {
+			err = s.runStep(c, st)
+			if err != nil {
+				s.say(c, ThreadMessage{Kind: "error", Text: st.Op + ": " + err.Error()})
+			}
+		} else {
 			s.say(c, ThreadMessage{Kind: "error", Text: err.Error()})
-			continue
 		}
-		if err := s.runStep(c, st); err != nil {
-			s.say(c, ThreadMessage{Kind: "error", Text: st.Op + ": " + err.Error()})
+		if err != nil {
+			s.updatePlanStep(c, "failed", err.Error())
+		} else {
+			s.updatePlanStep(c, "finished", "")
 		}
 	}
+	c.planStepID = ""
 }
 
 func (s *Service) runStep(c *execCtx, st Step) error {
@@ -294,6 +305,7 @@ func (s *Service) sendOrder(c *execCtx, targets []string, text, source string, d
 		}
 		o.Targets = append(o.Targets, t)
 	}
+	s.linkPlanOrder(c, &o)
 	s.Orders.Put(o)
 	for _, t := range o.Targets {
 		if d, ok := s.hub.Delivery(t.DeliveryID); ok && t.DeliveryID != "" {
@@ -303,6 +315,7 @@ func (s *Service) sendOrder(c *execCtx, targets []string, text, source string, d
 	o, _ = s.Orders.Get(o.ID)
 	s.hub.Publish(map[string]any{"type": "order", "order": o})
 	s.syncTasks(o)
+	s.syncPlanOrder(o)
 	if len(plan) > 0 {
 		s.say(c, ThreadMessage{Kind: "plan", Text: "Sent to " + joinAnd(planHandles(plan)) + ".", OrderID: o.ID, Plan: plan})
 	}

@@ -69,6 +69,8 @@ import { connectIntent, CONTENT_SOURCES, createGroupOps, dropMembershipOps, fram
 import { GroupFrame } from './tiles/GroupFrame';
 import { MemoryTile } from './tiles/MemoryTile';
 import { OrchestratorTile } from './tiles/OrchestratorTile';
+import { PlanBoardTile } from './tiles/PlanBoardTile';
+import { BrowserTestPicker, BrowserTestTile } from './tiles/BrowserTestTile';
 import { invertOps } from './ops';
 import { sendTile } from '../orch/actions';
 import { CommandBar } from '../orch/CommandBar';
@@ -158,6 +160,8 @@ const NODE_TYPES: NodeTypes = {
   file: FileTile,
   nbgroup: GroupFrame,
   orchestrator: OrchestratorTile,
+  planboard: PlanBoardTile,
+  browsertest: BrowserTestTile,
   memory: MemoryTile,
   web: WebTile,
   weblog: WebLogTile,
@@ -278,6 +282,7 @@ function BoardCanvas({ ctl, project, focusSession }: { ctl: BoardController; pro
   useSyncExternalStore(ctl.subscribeHistory, ctl.getHistoryVersion);
   const uiState = useSyncExternalStore(ui.subscribe, ui.get);
   const { tool, editing, penColor, penWidth, panel, markup, filePicker, appPicker, mission, composer, handoff, connectFrom, studio } = uiState;
+  const [browserTestPicker, setBrowserTestPicker] = useState(false);
   const diagramRuns = useDiagramRuns(ctl.workspaceId);
   const voice = useVoicePrefs();
   const [edgeSel, setEdgeSel] = useState<ReadonlySet<string>>(EMPTY);
@@ -1296,6 +1301,7 @@ function BoardCanvas({ ctl, project, focusSession }: { ctl: BoardController; pro
     { icon: 'memoryCard', label: 'Memory tile', onClick: () => insertAt('memory') },
     { icon: 'globe', label: 'Web page', onClick: () => insertNode('web') },
     { icon: 'monitor', label: 'Desktop app', onClick: () => ui.set({ appPicker: {} }) },
+    { icon: 'monitor', label: 'Browser testing', onClick: () => setBrowserTestPicker(true) },
     { icon: 'branch', label: 'Branches card', onClick: () => insertNode('branches') },
   ];
   /** A phone's rail is short: what it leaves out is here, with the board's own tools. */
@@ -1536,6 +1542,7 @@ function BoardCanvas({ ctl, project, focusSession }: { ctl: BoardController; pro
     { icon: 'memoryCard', label: 'Memory tile', onSelect: () => insertAt('memory', at) },
     { icon: 'orchestrator', label: 'Orchestrator card', onSelect: () => insertAt('orchestrator', at) },
     { icon: 'monitor', label: 'Desktop app', onSelect: () => ui.set({ appPicker: { at } }) },
+    { icon: 'monitor', label: 'Browser testing', onSelect: () => setBrowserTestPicker(true) },
     { icon: 'layout', label: 'Layouts', onSelect: () => togglePanel('layouts') },
     { icon: 'history', label: 'Snapshots', onSelect: () => togglePanel('snapshots') },
     { icon: 'selectAll', label: 'Select all', shortcut: 'Ctrl+A', disabled: !ctl.nodes.length, note: 'The board is empty', onSelect: () => ctl.select(ctl.nodes.map((n) => n.id)) },
@@ -2248,6 +2255,7 @@ function BoardCanvas({ ctl, project, focusSession }: { ctl: BoardController; pro
         />
       )}
 
+      {browserTestPicker && <BrowserTestPicker workspaceId={ctl.workspaceId} onClose={() => setBrowserTestPicker(false)} />}
       {appPicker && (
         <AppPicker
           project={project}

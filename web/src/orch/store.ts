@@ -95,7 +95,17 @@ export function mergeMessages(cur: ThreadMessage[], add: ThreadMessage[]): Threa
     return capThread([...cur, add[0]]);
   }
   const byId = new Map(cur.map((m) => [m.id, m]));
-  for (const m of add) byId.set(m.id, m);
+  for (const m of add) {
+    const prev = byId.get(m.id);
+    // REST hydration can finish after a newer live execution snapshot arrived.
+    const before = prev?.executionPlan?.updatedAt;
+    const after = m.executionPlan?.updatedAt;
+    // Go emits UTC RFC3339Nano with a variable fraction. Keep its nanoseconds:
+    // Date.parse would discard all progress within the same millisecond.
+    const stamp = (value: string) => value.replace(/(?:\.(\d+))?Z$/, (_, fraction: string | undefined) => `.${(fraction ?? '').padEnd(9, '0')}Z`);
+    if (before && (!after || stamp(before) > stamp(after))) continue;
+    byId.set(m.id, m);
+  }
   return capThread(sortMessages([...byId.values()]));
 }
 

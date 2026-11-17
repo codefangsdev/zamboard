@@ -413,6 +413,11 @@ func isWireSource(n *board.Node) bool {
 // directs the agents opened inside it (editor → orchestrator is the editor's Ask, another edge).
 func isWireTarget(t, src *board.Node) bool {
 	switch t.Kind {
+	case "planboard":
+		var data struct {
+			OrchestratorID string `json:"orchestratorId"`
+		}
+		return src.Kind == KindOrchestrator && json.Unmarshal(t.Data, &data) == nil && data.OrchestratorID == src.ID
 	case board.KindTerminal, KindGroup:
 		return true
 	case KindOrchestrator:

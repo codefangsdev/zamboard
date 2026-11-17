@@ -78,6 +78,7 @@ func (s *Service) OnDelivery(d delivery.Delivery) {
 }
 
 func (s *Service) orderChanged(o Order) {
+	s.syncPlanOrder(o)
 	s.hub.Publish(map[string]any{"type": "order", "order": o})
 	s.Orders.Save(s.Now())
 	s.forwardOrderChanged(o)

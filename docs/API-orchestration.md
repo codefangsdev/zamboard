@@ -356,19 +356,30 @@ Columns are found by their name (English and Indonesian), then by their position
 // ThreadMessage
 { "id": "tm_…", "threadId": "p_…", "at": "…",
   "role": "user"|"hub"|"agent",
-  "kind": "order"|"plan"|"report"|"reply"|"note"|"confirm"|"error",
+  "kind": "order"|"plan"|"executionPlan"|"report"|"reply"|"note"|"confirm"|"error",
   "text": "…", "source"?: "typed"|"voice"|"loop"|"api",
   "orderId"?: "o_…", "sessionId"?: "s_…", "handle"?: "Ash",
   "plan"?: [{ "handle": "Ash", "text": "…" }],                       // plan note: what was sent to whom
+  "executionPlan"?: { "id": "cmd_…", "commandId": "cmd_…", "workspaceId": "w_…",
+    "cardId"?: "n_…", "state": "running", "confirmationId"?: "cf_…", "updatedAt": "UTC RFC3339Nano",
+    "steps": [{ "id": "cmd_…:1", "order": 1, "op": "send", "title": "Run tests",
+      "assignees": [{ "sessionId": "s_…", "handle": "Ash" }], "dependsOn": [],
+      "state": "queued", "orderIds": ["o_…"], "result"?: "…", "error"?: "…" }] },
   "report"?: { "state": "finished"|"failed"|"timeout"|"skipped", "durationMs": 81234, "excerpt": "≤ 400 characters", "chars": 5120 },
   "confirmationId"?: "cf_…",
   "replyTo"?: { "id": "tm_…", "handle"?: "Ash", "excerpt": "…" } }   // the message being answered (§3.9)
 // Order
 { "id": "o_…", "threadId": "p_…", "commandId": "cmd_…", "text": "…", "createdAt": "…",
+  "planStepId"?: "cmd_…:1",
   "targets": [{ "sessionId", "handle", "deliveryId",
     "state": "queued"|"delivered"|"working"|"needsYou"|"finished"|"failed"|"timeout"|"cancelled"|"skipped",
     "startedAt", "finishedAt", "error"? }] }
 ```
+
+- **Execution timeline (Plan Board):** each executed command with steps adds one durable `executionPlan` message to its existing project/card thread. Progress updates reuse that message ID through the existing `thread` event and REST history; clients retain the snapshot with the newest `updatedAt`, including fractional seconds. Legacy `plan` notes remain supported.
+- **Canvas card:** each mounted orchestrator creates its own `planboard` node to its right (`480×560`, 80 px gap, `data.orchestratorId` points to its owner), plus a persisted `wire` from that orchestrator. The header's **Plan Board** button reuses the card and repairs a missing wire. The hub rejects wires from a different owner or a non-orchestrator. The title includes the owner's name, and todos appear in separate numbered plan batches. The card subscribes only to its owner's thread; an absent owner ID never falls back to the project thread. Nodes and wires persist through normal board ops; there is no second copy of plan state.
+- Step states include `pending`, `running`, `queued`, `delivered`, `working`, `needsYou`, `awaitingApproval`, `finished`, `failed`, `cancelled`, and `expired`. A send step follows its order targets; command execution returning does not mark agent work finished. Approval uses the existing confirmation flow. Restart reconciliation marks interrupted orders and their steps failed without resending automatically.
+- The timeline projects current execution; it adds no scheduler or dependency enforcement. `dependsOn` is currently empty. Copy/reply includes step details, and live updates keep readers at the bottom only when already following the thread.
 
 - Target `finished` = a `working → ready` transition after the delivery is `confirmed` (or `sent` and then `working` observed). `failed` = the delivery failed, `agent-exit`, or `error`. `timeout` = `settings.commands.reportTimeoutMin` (30) without finishing → the note "No reply from @Ash after 30 min".
 - On `finished`, the hub reads the reply (API-agents §8) and adds a `report` message; the message keeps ≤ 8000 characters of text. The full reply (≤ 200 KB) is stored for that message itself in `threads/<tid>.outputs/<id>.json`, so "See output" always opens that bubble's reply, even when the agent has moved on to another task, the hub restarted, or the console was deleted. The reply goes away when its message leaves the thread or the thread is cleared. Reports from before this feature show their message text with `partial:true` when it is shorter than `chars`.

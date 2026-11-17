@@ -66,6 +66,9 @@ func (s *Server) setupGUI() {
 }
 
 func (s *Server) routesGUI(authed func(string, handler)) {
+	authed("GET /api/browser-test/{sid}/frame", s.handleBrowserFrame)
+	authed("DELETE /api/browser-test/{sid}", s.handleBrowserStop)
+	authed("POST /api/browser-test/{sid}/open", s.handleBrowserOpen)
 	authed("GET /api/gui/apps", s.handleGUIApps)
 	authed("GET /api/gui/apps/{id}/icon", s.handleGUIIcon)
 	authed("GET /api/gui/sessions", s.handleGUISessions)

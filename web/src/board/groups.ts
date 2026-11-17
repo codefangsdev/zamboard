@@ -244,6 +244,10 @@ export function connectIntent(nodes: BoardNode[], edges: BoardEdge[], fromId: st
     return line('log', 'Linked');
   }
   if (from.kind === 'terminal' && to.kind === 'web') return line('preview', 'Linked');
+  if (from.kind === 'orchestrator' && to.kind === 'planboard') {
+    if (to.data.orchestratorId !== from.id) return { ok: false, reason: 'This Plan Board belongs to another orchestrator.' };
+    return line('wire', 'Linked');
+  }
   // a task board and its lead, whichever end the drag began at: the wire starts at the lead
   if (from.kind === 'orchestrator' && TASK_BOARDS.has(to.kind)) return line('wire', 'Linked');
   if (TASK_BOARDS.has(from.kind) && to.kind === 'orchestrator') return connectIntent(nodes, edges, to.id, from.id, at);

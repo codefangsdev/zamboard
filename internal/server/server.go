@@ -137,7 +137,9 @@ type Server struct {
 	// studio holds the Phase 7 studios and usage (studio.go).
 	studio *studioHub
 	// gui runs desktop apps of This PC for board tiles (h_gui.go).
-	gui *gui.Manager
+	gui           *gui.Manager
+	liveBrowserMu sync.Mutex
+	liveBrowsers  map[string]*liveBrowser
 	// art makes project covers and icons (h_art.go).
 	art *artState
 	// roots are the projects' root folders, where root consoles work (roots.go).
@@ -467,6 +469,7 @@ func (s *Server) shutdown() {
 	s.closeGitPreview()
 	s.closeStudio()
 	s.gui.Close()
+	s.closeLiveBrowsers()
 	s.jobs.Close()
 	if s.hookLn != nil {
 		s.hookLn.Close()

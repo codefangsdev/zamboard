@@ -108,10 +108,11 @@ type Hub interface {
 type Service struct {
 	hub Hub
 	// tasksMu guards reading a task board and writing it back (tasks.go).
-	tasksMu   sync.Mutex
-	tasksLast time.Time
-	st        *store.Store
-	Now       func() time.Time
+	planBoardMu sync.Mutex
+	tasksMu     sync.Mutex
+	tasksLast   time.Time
+	st          *store.Store
+	Now         func() time.Time
 
 	Threads  *Threads
 	Orders   *Orders
@@ -176,6 +177,7 @@ func New(hub Hub, st *store.Store) *Service {
 func (s *Service) Start() {
 	now := s.Now()
 	for _, o := range s.Orders.interrupted(now) {
+		s.syncPlanOrder(o)
 		text := "Order \"" + clipText(o.Text, 80) + "\" was interrupted by hub restart."
 		var missed []string
 		for _, t := range o.Targets {
@@ -250,6 +252,7 @@ func (s *Service) Tick(now time.Time) {
 }
 
 func (s *Service) publishConfirm(cf Confirmation) {
+	s.syncPlanConfirmation(cf)
 	cf.ctx = nil
 	s.hub.Publish(map[string]any{"type": "confirmation", "confirmation": cf})
 }

@@ -13,7 +13,7 @@ import { gitError } from '../../git/common';
 import { formatDateTime } from '../../lib/format';
 import { gitApi } from '../api';
 import type { GitCommit, GitRef, GitStatus, GitTarget } from '../types';
-import { layoutGraph, refPills, type GraphRow } from './commitGraph';
+import { layoutGraph, refPills, type GraphRow } from './commitGraphLayout';
 import { useWs } from './useWs';
 import { gitHostOf } from './partGit';
 import type { PartService } from './partsvc';

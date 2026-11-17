@@ -67,6 +67,7 @@ function OrchestratorTileImpl({ id, data, selected }: NodeProps<FlowNode>) {
   const [reply, setReply] = useState<ReplyDraft | null>(null);
   const [profile, setProfile] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const name = useLeadName(d.title);
   const hubName = useLeadName();
   const talkFirst = useTalkFirst();
@@ -78,7 +79,7 @@ function OrchestratorTileImpl({ id, data, selected }: NodeProps<FlowNode>) {
   const byId = useMemo(() => new Map(doc.nodes.map((n) => [n.id, n])), [doc.nodes]);
   const allWires = doc.edges.filter((e) => e.kind === 'wire' && e.source === id);
   const taskWires = allWires.filter((e) => TASK_BOARDS.has(byId.get(e.target)?.kind ?? ''));
-  const wires = allWires.filter((e) => !taskWires.includes(e));
+  const wires = allWires.filter((e) => !taskWires.includes(e) && byId.get(e.target)?.kind !== 'planboard');
   const directed = directedTerminals(doc.nodes, doc.edges, id);
   // editor cards wired to this one: it directs the agents opened inside them
   const editorWired = wires.some((w) => byId.get(w.target)?.kind === 'editor');
@@ -120,6 +121,7 @@ function OrchestratorTileImpl({ id, data, selected }: NodeProps<FlowNode>) {
     setSending(true);
     try {
       await sendCommand(project.id, replyText(att.compose(t), reply), { workspaceId: ctl.workspaceId, cardId: id, replyTo: reply?.id });
+      openPlanBoard(false);
       setText('');
       att.clear();
       setReply(null);
@@ -129,6 +131,26 @@ function OrchestratorTileImpl({ id, data, selected }: NodeProps<FlowNode>) {
       setSending(false);
     }
   };
+
+  const openPlanBoard = (select = true) => {
+    const existing = ctl.nodes.find((n) => n.kind === 'planboard' && n.data.orchestratorId === id);
+    if (existing) {
+      if (!ctl.sync.state.edges.some((e) => e.kind === 'wire' && e.source === id && e.target === existing.id)) {
+        ctl.apply([{ op: 'putEdge', edge: { id: newId('e'), source: id, target: existing.id, kind: 'wire', data: {} } }]);
+      }
+      if (select) ctl.select([existing.id]);
+      return;
+    }
+    const n = ctl.node(id) ?? data.node;
+    const planId = newId('n');
+    ctl.apply([
+      { op: 'put', node: { id: planId, kind: 'planboard', x: n.x + n.w + 80, y: n.y, w: 480, h: 560, data: { orchestratorId: id } } },
+      { op: 'putEdge', edge: { id: newId('e'), source: id, target: planId, kind: 'wire', data: {} } },
+    ]);
+    if (select) ctl.select([planId]);
+  };
+
+  useEffect(() => { openPlanBoard(false); }, [id, ctl]); // Each mounted orchestrator gets its own card; existing cards also regain their wire.
 
   const fillIn = (t: string) => {
     setText(t);
@@ -180,6 +202,7 @@ function OrchestratorTileImpl({ id, data, selected }: NodeProps<FlowNode>) {
   };
 
   const menu: MenuEntry[] = [
+    { label: 'Open Plan Board', icon: 'workflow', onSelect: () => openPlanBoard() },
     { label: connecting ? 'Finish connecting' : 'Connect consoles…', icon: 'wire', onSelect: () => ui.set({ connectFrom: connecting ? null : id }) },
     { label: 'New task board', icon: 'kanban', onSelect: () => addTaskBoard() },
     { label: 'Spawn agents for this card…', icon: 'plus', onSelect: () => ui.set({ composer: { slots: 2, group: false, orchestratorId: id } }) },
@@ -265,6 +288,7 @@ function OrchestratorTileImpl({ id, data, selected }: NodeProps<FlowNode>) {
         }
         actions={
           <>
+            <Button size="sm" variant="ghost" icon="workflow" className="nodrag" title="Open Plan Board beside this orchestrator" onClick={() => openPlanBoard()}>Plan Board</Button>
             {team.running.length > 0 &&
               (team.resume ? (
                 <Button size="sm" variant="ghost" iconOnly icon="play" className="nodrag" aria-label="Resume all" title={`Resume all ${team.running.length}`} onClick={() => void resumeSessions(team.running)} />
@@ -499,6 +523,18 @@ function OrchestratorTileImpl({ id, data, selected }: NodeProps<FlowNode>) {
             maxRows={4}
             menuPlacement="up"
             attachments={att}
+          />
+          <Button size="sm" variant="ghost" iconOnly icon="upload" aria-label="Attach a file or photo" title="Attach a file or photo (or paste one)" disabled={sending} onClick={() => fileRef.current?.click()} />
+          <input
+            ref={fileRef}
+            type="file"
+            multiple
+            hidden
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              e.target.value = '';
+              if (files.length) att.add(files);
+            }}
           />
           <Button size="sm" variant="primary" iconOnly icon="send" aria-label="Send order" disabled={!att.canSend(text) || sending} loading={sending} onClick={() => void send(text.trim())} />
         </div>

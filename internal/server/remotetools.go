@@ -196,6 +196,9 @@ func (s *Server) launchContext(sp session.Spec) (*agent.LaunchContext, error) {
 		}
 		prompt.WriteString(agent.NoCoAuthorRule + "\n")
 	}
+	if sp.WorkspaceID != "" {
+		prompt.WriteString("\nFor webpage tests the user wants to watch, use nextboard MCP browser_test: open the URL, then snapshot/click/fill/press/scroll. A live browser card on the board shows your actions and cursor. The browser runs on the hub; localhost is the hub, not an SSH server.\n")
+	}
 	if c.Prompt = prompt.String(); c.Prompt != "" {
 		c.PromptFile = s.st.Path("agents", "prompts", sp.ID+".md")
 		if err := os.MkdirAll(filepath.Dir(c.PromptFile), 0o700); err != nil {
@@ -291,6 +294,9 @@ type remoteTarget struct {
 
 func (t remoteTarget) tools() []map[string]any {
 	var list []map[string]any
+	if t.sessionID != "" && t.workspaceID != "" && !t.readOnly {
+		list = append(list, browserTestTool)
+	}
 	if t.machineID != "" || len(t.parts) > 0 {
 		write := t.writable()
 		for _, x := range remoteToolList {
@@ -411,6 +417,9 @@ func (s *Server) remoteRPC(ctx context.Context, t remoteTarget, req rpcRequest) 
 		}
 		if json.Unmarshal(req.Params, &p) != nil {
 			return nil, map[string]any{"code": -32602, "message": "invalid params"}
+		}
+		if p.Name == "browser_test" {
+			return remoteAnswer(s.browserTest(ctx, t, p.Arguments)), nil
 		}
 		if strings.HasPrefix(p.Name, "memory_") {
 			text, err := s.runMemoryTool(t, p.Name, p.Arguments)

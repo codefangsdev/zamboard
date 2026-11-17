@@ -74,20 +74,21 @@ type Report struct {
 
 // ThreadMessage is one entry of a thread.
 type ThreadMessage struct {
-	ID             string     `json:"id"`
-	ThreadID       string     `json:"threadId"`
-	At             time.Time  `json:"at"`
-	Role           string     `json:"role"` // user | hub | agent
-	Kind           string     `json:"kind"` // order | plan | report | reply | note | confirm | error
-	Text           string     `json:"text"`
-	Source         string     `json:"source,omitempty"`
-	OrderID        string     `json:"orderId,omitempty"`
-	SessionID      string     `json:"sessionId,omitempty"`
-	Handle         string     `json:"handle,omitempty"`
-	Plan           []PlanNote `json:"plan,omitempty"`
-	Report         *Report    `json:"report,omitempty"`
-	ConfirmationID string     `json:"confirmationId,omitempty"`
-	ReplyTo        *ReplyRef  `json:"replyTo,omitempty"`
+	ExecutionPlan  *ExecutionPlan `json:"executionPlan,omitempty"`
+	ID             string         `json:"id"`
+	ThreadID       string         `json:"threadId"`
+	At             time.Time      `json:"at"`
+	Role           string         `json:"role"` // user | hub | agent
+	Kind           string         `json:"kind"` // order | plan | report | reply | note | confirm | error
+	Text           string         `json:"text"`
+	Source         string         `json:"source,omitempty"`
+	OrderID        string         `json:"orderId,omitempty"`
+	SessionID      string         `json:"sessionId,omitempty"`
+	Handle         string         `json:"handle,omitempty"`
+	Plan           []PlanNote     `json:"plan,omitempty"`
+	Report         *Report        `json:"report,omitempty"`
+	ConfirmationID string         `json:"confirmationId,omitempty"`
+	ReplyTo        *ReplyRef      `json:"replyTo,omitempty"`
 	// Resend: the client offers to send OrderID again while a target is Undelivered.
 	Resend bool `json:"resend,omitempty"`
 }
@@ -426,14 +427,15 @@ func TargetFinal(s string) bool {
 
 // Order is text sent to one or more consoles from a thread.
 type Order struct {
-	ID        string        `json:"id"`
-	ThreadID  string        `json:"threadId"`
-	ProjectID string        `json:"projectId"`
-	CommandID string        `json:"commandId"`
-	Text      string        `json:"text"`
-	Source    string        `json:"source,omitempty"`
-	CreatedAt time.Time     `json:"createdAt"`
-	Targets   []OrderTarget `json:"targets"`
+	PlanStepID string        `json:"planStepId,omitempty"`
+	ID         string        `json:"id"`
+	ThreadID   string        `json:"threadId"`
+	ProjectID  string        `json:"projectId"`
+	CommandID  string        `json:"commandId"`
+	Text       string        `json:"text"`
+	Source     string        `json:"source,omitempty"`
+	CreatedAt  time.Time     `json:"createdAt"`
+	Targets    []OrderTarget `json:"targets"`
 }
 
 // Active reports whether a target still runs.

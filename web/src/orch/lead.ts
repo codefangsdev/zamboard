@@ -33,6 +33,12 @@ export interface ReplyDraft {
 
 /** What a message says, as plain text. */
 export function messageText(m: ThreadMessage): string {
+  if (m.executionPlan) {
+    const p = m.executionPlan;
+    return [m.text || 'Execution plan', p.state, ...[...(p.steps ?? [])].sort((a, b) => a.order - b.order).map((s) =>
+      `${s.order}. ${s.title || s.op} [${s.state}]${s.result ? ` — ${s.result}` : ''}${s.error ? ` — ${s.error}` : ''}`,
+    )].join('\n');
+  }
   if (m.plan?.length) return m.plan.map((p) => `@${p.handle}: ${p.text}`).join('\n');
   return m.text || m.report?.excerpt || '';
 }
@@ -47,7 +53,7 @@ export function messageAuthor(m: ThreadMessage, lead: string): string {
 
 export function replyDraftOf(m: ThreadMessage, lead: string, toLead = false): ReplyDraft {
   const handle = toLead ? undefined : (m.handle ?? (m.plan?.length === 1 ? m.plan[0].handle : undefined));
-  const text = m.report?.excerpt || (m.plan?.length ? m.plan[0].text : m.text);
+  const text = m.report?.excerpt || messageText(m);
   const author = messageAuthor(m, lead);
   const label = handle ? `To @${handle}` : author === lead ? `To ${lead}` : `Asking ${lead} about ${author}`;
   return { id: m.id, handle, label, excerpt: text.replace(/\s+/g, ' ').slice(0, 200) };

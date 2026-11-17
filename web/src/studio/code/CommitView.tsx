@@ -10,7 +10,7 @@ import { STATUS_LABEL, STATUS_LETTER, STATUS_TONE, splitPath } from '../../git/c
 import { formatDateTime, timeAgo } from '../../lib/format';
 import { gitApi } from '../api';
 import type { GitCommitDetail, GitCommitFile, GitTarget } from '../types';
-import { LANE_COLORS } from './commitGraph';
+import { LANE_COLORS } from './commitGraphLayout';
 import { RefPills } from './CommitGraph';
 import { STASH_LABEL } from './StashSection';
 import { FileIcon } from './Explorer';

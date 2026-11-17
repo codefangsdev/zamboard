@@ -62,6 +62,7 @@ type CommandResponse struct {
 // execCtx carries a command through planning, confirmation and execution.
 type execCtx struct {
 	commandID, threadID, projectID, workspaceID, cardID, clientID, source, by string
+	planStepID                                                                string
 	selection                                                                 []string
 	plannerMode                                                               string
 	planned                                                                   bool
@@ -288,6 +289,7 @@ func agentIDs(l []agent.Agent) []string {
 }
 
 func (s *Service) addConfirm(c *execCtx, cf *Confirmation) *Confirmation {
+	s.ensureExecutionPlan(c, cf.Steps)
 	cf.ThreadID, cf.CommandID = c.threadID, c.commandID
 	cf.ctx = c
 	ttl := time.Duration(s.hub.Settings().Commands.ConfirmTTLSec) * time.Second
