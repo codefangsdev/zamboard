@@ -16,16 +16,14 @@ import (
 
 // Errors of POST /api/projects/{id}/commands.
 var (
-	ErrEmptyText      = errors.New("the command text is empty")
-	ErrCommandTooLong = errors.New("the command text is longer than 4000 characters")
-	ErrThreadBusy     = errors.New("3 commands are already queued behind the planner turn of this thread")
-	ErrBadCard        = errors.New("cardId is not an orchestrator card in this workspace")
-	ErrWrongProject   = errors.New("the workspace does not belong to this project")
-	ErrMixedBoards    = errors.New("consoles on different boards cannot share a group")
+	ErrEmptyText    = errors.New("the command text is empty")
+	ErrThreadBusy   = errors.New("3 commands are already queued behind the planner turn of this thread")
+	ErrBadCard      = errors.New("cardId is not an orchestrator card in this workspace")
+	ErrWrongProject = errors.New("the workspace does not belong to this project")
+	ErrMixedBoards  = errors.New("consoles on different boards cannot share a group")
 )
 
 const (
-	maxCommand      = 4000
 	maxPlannerText  = 600 // without talk first, longer text goes out as it is
 	maxThreadQueued = 3
 )
@@ -122,9 +120,6 @@ func (s *Service) Command(req CommandRequest) (CommandResponse, error) {
 	text := strings.TrimSpace(req.Text)
 	if text == "" {
 		return CommandResponse{}, ErrEmptyText
-	}
-	if len([]rune(text)) > maxCommand {
-		return CommandResponse{}, ErrCommandTooLong
 	}
 	ws, proj, ok := s.hub.Workspace(req.WorkspaceID)
 	if !ok {
@@ -247,11 +242,7 @@ func (s *Service) process(c *execCtx, text string) (string, *Confirmation) {
 		}
 	}
 	if b.planner {
-		limit := maxPlannerText
-		if lead.talkFirst {
-			limit = maxCommand
-		}
-		if ok, reason := s.PlannerAvailable(c.plannerMode); ok && len([]rune(text)) <= limit {
+		if ok, reason := s.PlannerAvailable(c.plannerMode); ok && (lead.talkFirst || len([]rune(text)) <= maxPlannerText) {
 			ok, why := s.startPlanner(c, sc, text)
 			if ok {
 				return "pending", nil

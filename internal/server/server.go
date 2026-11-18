@@ -683,6 +683,8 @@ func (s *Server) detectCommands() []string {
 // bodyLimit is 64 KB except for the few routes that carry content.
 func bodyLimit(p string) int64 {
 	switch {
+	case strings.HasPrefix(p, "/api/projects/") && strings.HasSuffix(p, "/commands"):
+		return 20 << 20 // Long orchestrator input; retain a request-size safety limit.
 	case strings.HasPrefix(p, "/api/workspaces/") && strings.HasSuffix(p, "/board/ops"):
 		return 2 << 20
 	case p == "/api/assets", strings.HasSuffix(p, "/attach") && (strings.HasPrefix(p, "/api/sessions/") || strings.HasPrefix(p, "/api/projects/")):

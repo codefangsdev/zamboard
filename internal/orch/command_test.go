@@ -224,8 +224,13 @@ func TestCardScope(t *testing.T) {
 	if _, err := s.Command(CommandRequest{Text: "  ", WorkspaceID: wid}); !errors.Is(err, ErrEmptyText) {
 		t.Fatal(err)
 	}
-	if _, err := s.Command(CommandRequest{Text: strings.Repeat("x", 4001), WorkspaceID: wid}); !errors.Is(err, ErrCommandTooLong) {
+	longText := strings.Repeat("teks panjang 日本語\n", 1000)
+	r, err = s.Command(CommandRequest{Text: longText, WorkspaceID: wid, CardID: card, Planner: "off"})
+	if err != nil {
 		t.Fatal(err)
+	}
+	if o, ok := s.Orders.Get(r.OrderID); !ok || o.Text != strings.TrimSpace(longText) {
+		t.Fatal("long command was truncated or lost")
 	}
 	if _, err := s.Command(CommandRequest{Text: "x", WorkspaceID: "w_missing0001"}); !errors.Is(err, ErrWorkspaceNotFound) {
 		t.Fatal(err)

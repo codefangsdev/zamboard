@@ -243,7 +243,6 @@ export function MentionInput({
         aria-controls={open ? listId : undefined}
         aria-activedescendant={open ? `${listId}-${active}` : undefined}
         spellCheck
-        maxLength={4000}
         onChange={(e) => {
           hist.current = null;
           onChange(e.target.value);

@@ -415,7 +415,7 @@ New fields in `Session` (Info). `status`/`busy` do not change meaning, so old cl
 | POST | `/api/sessions/{id}/restart` | §3.3 | `Session` |
 | POST | `/api/sessions/{id}/agent` | §3.3 | `Session` |
 | GET | `/api/sessions/{id}/reply` | — | `Reply` (§8). `404 no_reply` |
-| POST | `/api/sessions/{id}/reply/save` | `{"dir"?: "outputs"}` | `Stat` (writes `<project>/outputs/<YYYY-MM-DD-HHMM>-<handle>.md` via fs/write `unique:true`; the first line is an HTML comment with the date + handle; the `dir` folder is created when it does not exist — locally `mkdir`, over SSH through SFTP — as part of this explicit action; `dir` is relative, without `..`) |
+| POST | `/api/sessions/{id}/reply/save` | `{"dir"?: "outputs"}` | `Stat` (writes `<hub home>/Downloads/NextBoard/<project-id>/outputs/<YYYY-MM-DD-HHMM>-<handle>.md` via fs/write `unique:true`; the first line is an HTML comment with the date + handle; the `dir` folder is created when it does not exist — on the local hub, including for SSH projects — as part of this explicit action; `dir` is relative, without `..`) |
 | GET | `/api/sessions/{id}/transcript?last=20` | `last` 1–200 | `{"agentSessionId","messages":[TranscriptMessage…],"truncated":bool}` |
 | GET | `/api/sessions/{id}/tokens?since=` | — | `{"items":[TokenUsage…]}` |
 

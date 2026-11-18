@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -59,7 +60,7 @@ func (s *Server) handleSessionReply(w http.ResponseWriter, r *http.Request, p *p
 }
 
 // handleSessionReplySave writes the last reply to
-// <project>/<dir>/<YYYY-MM-DD-HHMM>-<handle>.md (explicit user action;
+// <hub home>/Downloads/NextBoard/<project-id>/<dir>/<YYYY-MM-DD-HHMM>-<handle>.md (explicit user action;
 // unique name, never overwrites).
 func (s *Server) handleSessionReplySave(w http.ResponseWriter, r *http.Request, p *principal) {
 	sess, ok := s.sessionByPath(w, r)
@@ -102,21 +103,30 @@ func replySaveDir(w http.ResponseWriter, r *http.Request) (string, bool) {
 	return dir, true
 }
 
-// saveReplyFile writes a reply to <project>/<dir>/<YYYY-MM-DD-HHMM>-<handle>.md.
+// saveReplyFile saves output on the local hub, even for an SSH project.
 func (s *Server) saveReplyFile(w http.ResponseWriter, r *http.Request, projectID, dir, handle, text string, at time.Time) {
-	pr, ok := s.projects.Get(projectID)
+	_, ok := s.projects.Get(projectID)
 	if !ok {
 		writeErr(w, http.StatusNotFound, project.ErrNotFound.Error())
 		return
 	}
-	h, ok := s.machines.Host(pr.MachineID)
+	h, ok := s.machines.Host(machine.LocalID)
 	if !ok {
 		writeErr(w, http.StatusNotFound, machine.ErrNotFound.Error())
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), fsTimeout)
 	defer cancel()
-	folder := pr.Path
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fsErr(w, err)
+		return
+	}
+	folder := path.Join(home, "Downloads", "NextBoard", projectID)
+	if err := os.MkdirAll(folder, 0o755); err != nil {
+		fsErr(w, err)
+		return
+	}
 	for _, part := range strings.Split(dir, "/") {
 		if part == "" || part == "." {
 			continue

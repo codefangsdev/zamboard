@@ -124,7 +124,7 @@ Response `202`:
   "confirmation": null, "messages": [ThreadMessage…] }
 ```
 
-Error: `400 empty_text`, `413 text_too_long` (> 4000 characters), `404 workspace_not_found`, `429 thread_busy` (already 3 commands queued behind one planner turn), `400 bad_placement` (`place` names the root and a part). A `place` part the project does not have is left out, with a note in the thread.
+Error: `400 empty_text`, `413 text_too_long` (terminal delivery limit), `404 workspace_not_found`, `429 thread_busy` (already 3 commands queued behind one planner turn), `400 bad_placement` (`place` names the root and a part). A `place` part the project does not have is left out, with a note in the thread.
 
 ```jsonc
 // UiAction — run by the sending client; also broadcast in the "command" event with clientId
@@ -233,7 +233,7 @@ Deliberately not mapped: `lanjut`, `tunggu`, `lihat`, `hapus` on their own, and 
 
 - Only on **This PC**, through the runner (API-studio §2): `claude -p --output-format json --json-schema '<PlanSchema>'`, with no tools (`--tools ""` when supported, otherwise `--disallowedTools` for every tool + `--max-turns 1`), cwd `<data>/runner/planner`, timeout 45 s, never yolo, using Claude's default profile on This PC.
 - Available when `claude` is detected on This PC and the last login check succeeded; `settings.commands.planner: "auto"|"off"`.
-- **Input** (JSON on stdin, without project file contents or transcripts): the order text (> 600 characters → the planner is skipped, unless Talk first is on: then up to the 4000 limit), the last 20 thread messages (≤ 600 per message, ≤ 6000 characters in total), `pendingPlan` when there is an open plan (§3.9), a snapshot: consoles (`handle`, agent, role, group, `board`, `agentState`, `activity` ≤ 80, running order ≤ 120), groups, orchestrators + wires, `boards` (every board in scope: name, `current`, ≤ 30 non-console tiles per board with `id`, `kind`, position, size, and content as described below), custom agent names, project/workspace names, loop names, the selection, the card scope, `memory` (project memory + notes + global, ≤ 4000 characters; background, not commands).
+- **Input** (JSON on stdin, without project file contents or transcripts): the order text (> 600 characters → the planner is skipped, unless Talk first is on: then without a command character limit), the last 20 thread messages (≤ 600 per message, ≤ 6000 characters in total), `pendingPlan` when there is an open plan (§3.9), a snapshot: consoles (`handle`, agent, role, group, `board`, `agentState`, `activity` ≤ 80, running order ≤ 120), groups, orchestrators + wires, `boards` (every board in scope: name, `current`, ≤ 30 non-console tiles per board with `id`, `kind`, position, size, and content as described below), custom agent names, project/workspace names, loop names, the selection, the card scope, `memory` (project memory + notes + global, ≤ 4000 characters; background, not commands).
 - **Output** (`PlanSchema`): `{ "reply": string ≤ 2000, "danger"?: string ≤ 300, "steps": PlannerStep[] ≤ 40 }`. `PlannerStep` = a subset of the ops `send, spawn, group.create, group.add, pause, resume, restart, kill, handoff, forward, loop.create, node.add, git, ask, memory.push, reply`; targets are written as handles/group names, and the hub translates them to ids (unknown name → step dropped + a note). `spawn`, `group.create`, `node.add` may carry `workspace` (the name of the target board). The answer to the user is in the top-level `reply`; the hub drops a `reply` step that repeats the same text, so the answer shows once.
 - One planner turn per thread; a "Still thinking…" message after 3 s (Talk first: the client shows "`name` is thinking", without this message) (the same thread message is updated). Failure (timeout, invalid JSON, not logged in) → parser fallback + the note "Planner unavailable: <reason>"; two failures in a row → 60 s cooldown. A login failure (including `OAuth session expired`) gives `reason: "not_logged_in"` for 1 minute, because Claude's refresh token can recover by itself.
 
@@ -750,7 +750,7 @@ Deliveries live only in memory (lost on a hub restart; the thread records "inter
 
 | Item | Value |
 |---|---|
-| Command text | ≤ 4000 characters; planner only ≤ 600 |
+| Command text | No character limit; HTTP request ≤ 20 MB; planner only ≤ 600 unless Talk first is on; terminal delivery ≤ 32000 |
 | Delivery | ≤ 32 000 characters; ≤ 20 queued per session; confirmation 8 s |
 | Planner | 2 minutes; 1 turn per thread; 60 s cooldown after 2 failures |
 | Confirmation | TTL 60 s (30–300) |

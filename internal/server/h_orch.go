@@ -113,7 +113,7 @@ func (s *Server) orchErr(w http.ResponseWriter, err error) {
 		placeErr(w, err) // from placeSession: part_machine, root_unavailable
 	case errors.Is(err, orch.ErrEmptyText), errors.Is(err, delivery.ErrEmptyText):
 		writeErrCode(w, http.StatusBadRequest, "empty_text", err.Error())
-	case errors.Is(err, orch.ErrCommandTooLong), errors.Is(err, delivery.ErrTextTooLong):
+	case errors.Is(err, delivery.ErrTextTooLong):
 		writeErrCode(w, http.StatusRequestEntityTooLarge, "text_too_long", err.Error())
 	case errors.Is(err, orch.ErrWorkspaceNotFound), errors.Is(err, project.ErrWorkspaceNotFound):
 		writeErrCode(w, http.StatusNotFound, "workspace_not_found", err.Error())
@@ -444,7 +444,7 @@ func (s *Server) handleMessageOutput(w http.ResponseWriter, r *http.Request, p *
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleMessageOutputSave writes that reply to the project's outputs folder.
+// handleMessageOutputSave writes that reply to the local hub's downloads folder.
 func (s *Server) handleMessageOutputSave(w http.ResponseWriter, r *http.Request, p *principal) {
 	tid, ok := s.threadID(w, r)
 	if !ok {

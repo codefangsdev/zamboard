@@ -1,5 +1,5 @@
 // Output viewer (docs/API-agents.md §8, C5): a full reply as a document, with Copy, Save .md
-// (outputs/ in the project) and "Reply to @handle", which goes through the Phase 6 delivery
+// (Downloads/NextBoard on the local hub) and "Reply to @handle", which goes through the Phase 6 delivery
 // engine (typed only when the agent is at its prompt). From a console it shows its last
 // reply; from a report in a thread, the reply of that report, whatever the console did since.
 
@@ -139,7 +139,7 @@ export function OutputViewer({ sessionId, message, onClose, onAnswer }: OutputVi
       help={reply ? <ReplyMeta reply={reply} /> : undefined}
       footer={
         <>
-          <Button variant="secondary" icon="download" onClick={() => void save()} loading={saving} disabled={!reply}>
+          <Button variant="secondary" icon="download" title="Save Markdown to Downloads/NextBoard on the local hub" onClick={() => void save()} loading={saving} disabled={!reply}>
             Save .md
           </Button>
           <Button variant="primary" icon="copy" onClick={() => void copy()} disabled={!reply}>
